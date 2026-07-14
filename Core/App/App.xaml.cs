@@ -18,6 +18,8 @@ using TM.Services.Framework.AI.Core;
 using TM.Framework.Common.Services.Factories;
 using TM.Framework.Notifications.SystemNotifications.SystemIntegration;
 using TM.Framework.SystemSettings.Proxy.Services;
+using System.IO;
+using System.Linq;
 
 namespace TM
 {
@@ -137,7 +139,11 @@ namespace TM
                 catch { }
 
                 IsDebugMode = e.Args.Length > 0 && e.Args[0] == "--debug";
-
+// ==================== 本地模式支持 ====================
+bool isLocalMode = e.Args.Any(a => a.Equals("--local", StringComparison.OrdinalIgnoreCase))
+                   || File.Exists("local.mode");
+string defaultLocalUser = "LocalUser";
+// ====================================================
                 try
                 {
                     if (!IsDebugMode)
@@ -265,16 +271,26 @@ namespace TM
 
                 Log("[启动] 所有登录前服务已就绪");
 
-                Log("[启动] 显示登录窗口...");
-                var loginWindow = _windowFactory!.CreateWindow<LoginWindow>();
-                var loginResult = loginWindow.ShowDialog();
+                string loggedInUsername = defaultLocalUser;
 
-                if (loginResult != true)
-                {
-                    Log("[启动] 用户取消登录，程序退出");
-                    Shutdown();
-                    return;
-                }
+if (!isLocalMode)
+{
+    Log("[启动] 显示登录窗口...");
+    var loginWindow = _windowFactory!.CreateWindow<LoginWindow>();
+    var loginResult = loginWindow.ShowDialog();
+
+    if (loginResult != true)
+    {
+        Log("[启动] 用户取消登录，程序退出");
+        Shutdown();
+        return;
+    }
+    loggedInUsername = loginWindow.LoggedInUsername ?? defaultLocalUser;
+}
+else
+{
+    Log($"[本地模式] 自动使用默认本地账户: {defaultLocalUser}");
+}
 
                 var postLoginWarmup = Task.WhenAll(
                     Task.Run(() => { try { ServiceLocator.Get<BasicInfoSettings>(); } catch { } }),
@@ -309,17 +325,17 @@ namespace TM
                 }
 
                 try
-                {
-                    if (!string.IsNullOrWhiteSpace(loginWindow.LoggedInUsername))
-                    {
-                        _basicInfoSettings!.SwitchUser(loginWindow.LoggedInUsername);
-                        _currentUserContext!.Refresh();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log($"[启动] 切换用户资料失败: {ex.Message}");
-                }
+{
+    if (!string.IsNullOrWhiteSpace(loggedInUsername))
+    {
+        _basicInfoSettings!.SwitchUser(loggedInUsername);
+        _currentUserContext!.Refresh();
+    }
+}
+catch (Exception ex)
+{
+    Log($"[启动] 切换用户资料失败: {ex.Message}");
+}
 
                 var bootstrapManager = CreateBootstrapTasks(e.Args);
 
