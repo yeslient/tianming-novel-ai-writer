@@ -314,7 +314,24 @@ else
                 {
                     Log($"[DI] 延迟服务解析失败: {ex.Message}");
                 }
+// ==================== 本地模式用户资料设置 ====================
+if (isLocalMode)
+{
+    try
+    {
+        _basicInfoSettings.Username = defaultLocalUser;           // admin
+        _basicInfoSettings.DisplayName = "Admin (007)";           // 显示名称带 ID
 
+        _currentUserContext.Refresh();
+
+        TM.App.Log("[本地模式] 本地用户资料已设置（admin + ID:007）");
+    }
+    catch (Exception ex)
+    {
+        TM.App.Log($"[本地模式] 设置本地用户资料失败: {ex.Message}");
+    }
+}
+// ============================================================
                 try
                 {
                     AuthStartupService.Initialize();
