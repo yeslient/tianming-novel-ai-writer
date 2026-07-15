@@ -17,16 +17,27 @@ namespace TM.Framework.User.Profile.Subscription
         private readonly ApiService _apiService;
 
         public SubscriptionViewModel(SubscriptionService subscriptionService, ApiService apiService)
-        {
-            _subscriptionService = subscriptionService;
-            _apiService = apiService;
+{
+    _subscriptionService = subscriptionService;
+    _apiService = apiService;
 
-            RefreshCommand = new SubscriptionRelayCommand(async () => await RefreshAsync());
-            ActivateCardKeyCommand = new SubscriptionRelayCommand(async () => await ActivateCardKeyAsync());
-            UpgradeCommand = new SubscriptionRelayCommand(async () => await UpgradeAsync());
-            CopyInviteCodeCommand = new SubscriptionRelayCommand(async () => await CopyInviteCodeAsync());
+    RefreshCommand = new SubscriptionRelayCommand(async () => await RefreshAsync());
+    ActivateCardKeyCommand = new SubscriptionRelayCommand(async () => await ActivateCardKeyAsync());
+    UpgradeCommand = new SubscriptionRelayCommand(async () => await UpgradeAsync());
+    CopyInviteCodeCommand = new SubscriptionRelayCommand(async () => await CopyInviteCodeAsync());
 
-        }
+    // ==================== 本地模式自动设置 ID ====================
+    if (System.IO.File.Exists("local.mode"))
+    {
+        PlanType = "pro";
+        IsActive = true;
+        EndTime = DateTime.MaxValue;
+        RemainingDays = 99999;
+        InviteCode = "007";
+        TM.App.Log("[本地模式] 构造函数中已设置 InviteCode=007");
+    }
+    // ============================================================
+}
 
         #region 属性
 
