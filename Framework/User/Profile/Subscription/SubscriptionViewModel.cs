@@ -144,24 +144,24 @@ namespace TM.Framework.User.Profile.Subscription
 
         #endregion
 
-       public async Task RefreshAsync()
+      public async Task RefreshAsync()
 {
     IsLoading = true;
 
     try
     {
-        // ==================== 本地最高权限强制（更可靠版本） ====================
-        bool isLocalAdmin = TM.App.IsLocalMode || 
-                            (System.IO.File.Exists("local.mode"));
+        // ==================== 本地模式最高权限处理（稳定版） ====================
+        bool isLocalMode = System.IO.File.Exists("local.mode");
 
-        if (isLocalAdmin)
+        if (isLocalMode)
         {
-            PlanType = "pro";           // 专业版
-            IsActive = true;            // 已激活
+            // 本地模式强制专业版 + 永久有效
+            PlanType = "pro";
+            IsActive = true;
             EndTime = DateTime.MaxValue;
             RemainingDays = 99999;
 
-            TM.App.Log("[本地模式] 强制设置为专业版永久会员");
+            TM.App.Log("[本地模式] 已强制设置为专业版永久会员");
         }
         else
         {
