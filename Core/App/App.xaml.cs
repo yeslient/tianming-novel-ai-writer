@@ -142,7 +142,7 @@ namespace TM
 // ==================== 本地模式支持 ====================
 bool isLocalMode = e.Args.Any(a => a.Equals("--local", StringComparison.OrdinalIgnoreCase))
                    || File.Exists("local.mode");
-string defaultLocalUser = "LocalUser";
+string defaultLocalUser = "admin";
 // ====================================================
                 try
                 {

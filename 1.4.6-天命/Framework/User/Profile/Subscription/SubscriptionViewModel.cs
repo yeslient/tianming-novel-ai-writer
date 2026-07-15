@@ -116,37 +116,52 @@ namespace TM.Framework.User.Profile.Subscription
 
         #endregion
 
-        public async Task RefreshAsync()
+       public async Task RefreshAsync()
+{
+    IsLoading = true;
+
+    try
+    {
+        // ==================== 本地模式最高权限处理 ====================
+        if (TM.App.IsLocalMode)
         {
-            IsLoading = true;
+            // 本地模式直接强制为专业版 + 永久有效
+            PlanType = "pro";
+            IsActive = true;
+            EndTime = DateTime.MaxValue;
+            RemainingDays = 99999;
 
-            try
+            TM.App.Log("[本地模式] 已强制设置为专业版永久会员");
+        }
+        else
+        {
+            var subscription = await _subscriptionService.GetSubscriptionFromServerAsync();
+            if (subscription != null)
             {
-                var subscription = await _subscriptionService.GetSubscriptionFromServerAsync();
-                if (subscription != null)
-                {
-                    PlanType = subscription.PlanType ?? "free";
-                    IsActive = subscription.IsActive;
-                    EndTime = subscription.EndTime;
-                    RemainingDays = _subscriptionService.RemainingDays;
-                }
-
-                var history = await _subscriptionService.GetActivationHistoryAsync();
-                ActivationHistory.Clear();
-                foreach (var item in history)
-                {
-                    ActivationHistory.Add(item);
-                }
-            }
-            catch (Exception ex)
-            {
-                TM.App.Log($"[SubscriptionViewModel] 刷新失败: {ex.Message}");
-            }
-            finally
-            {
-                IsLoading = false;
+                PlanType = subscription.PlanType ?? "free";
+                IsActive = subscription.IsActive;
+                EndTime = subscription.EndTime;
+                RemainingDays = _subscriptionService.RemainingDays;
             }
         }
+        // ============================================================
+
+        var history = await _subscriptionService.GetActivationHistoryAsync();
+        ActivationHistory.Clear();
+        foreach (var item in history)
+        {
+            ActivationHistory.Add(item);
+        }
+    }
+    catch (Exception ex)
+    {
+        TM.App.Log($"[SubscriptionViewModel] 刷新失败: {ex.Message}");
+    }
+    finally
+    {
+        IsLoading = false;
+    }
+}
 
         public async Task UpgradeAsync()
         {
