@@ -144,48 +144,54 @@ namespace TM.Framework.User.Profile.Subscription
 
         #endregion
 
-        public async Task RefreshAsync()
+       public async Task RefreshAsync()
+{
+    IsLoading = true;
+
+    try
+    {
+        // ==================== 本地最高权限强制（更可靠版本） ====================
+        bool isLocalAdmin = TM.App.IsLocalMode || 
+                            (System.IO.File.Exists("local.mode"));
+
+        if (isLocalAdmin)
         {
-            IsLoading = true;
+            PlanType = "pro";           // 专业版
+            IsActive = true;            // 已激活
+            EndTime = DateTime.MaxValue;
+            RemainingDays = 99999;
 
-            try
+            TM.App.Log("[本地模式] 强制设置为专业版永久会员");
+        }
+        else
+        {
+            var subscription = await _subscriptionService.GetSubscriptionFromServerAsync();
+            if (subscription != null)
             {
-                var subscription = await _subscriptionService.GetSubscriptionFromServerAsync();
-                if (subscription != null)
-                {
-                    PlanType = subscription.PlanType ?? "free";
-                    IsActive = subscription.IsActive;
-                    EndTime = subscription.EndTime;
-                    RemainingDays = _subscriptionService.RemainingDays;
-                }
-
-                var history = await _subscriptionService.GetActivationHistoryAsync();
-                ActivationHistory.ReplaceAll(history);
-
-                try
-                {
-                    var profileResult = await _apiService.GetProfileAsync();
-                    if (profileResult.Success && profileResult.Data != null)
-                    {
-                        InviteCode = profileResult.Data.InviteCode ?? "--";
-                        InviteCount = profileResult.Data.InviteCount;
-                        InviteRewardDays = profileResult.Data.InviteRewardDays;
-                    }
-                }
-                catch (Exception pex)
-                {
-                    TM.App.Log($"[SubscriptionViewModel] 获取邀请码失败: {pex.Message}");
-                }
-            }
-            catch (Exception ex)
-            {
-                TM.App.Log($"[SubscriptionViewModel] 刷新失败: {ex.Message}");
-            }
-            finally
-            {
-                IsLoading = false;
+                PlanType = subscription.PlanType ?? "free";
+                IsActive = subscription.IsActive;
+                EndTime = subscription.EndTime;
+                RemainingDays = _subscriptionService.RemainingDays;
             }
         }
+        // =====================================================================
+
+        var history = await _subscriptionService.GetActivationHistoryAsync();
+        ActivationHistory.Clear();
+        foreach (var item in history)
+        {
+            ActivationHistory.Add(item);
+        }
+    }
+    catch (Exception ex)
+    {
+        TM.App.Log($"[SubscriptionViewModel] 刷新失败: {ex.Message}");
+    }
+    finally
+    {
+        IsLoading = false;
+    }
+}
 
         public async Task CopyInviteCodeAsync()
         {
