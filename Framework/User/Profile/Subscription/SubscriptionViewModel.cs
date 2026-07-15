@@ -144,24 +144,23 @@ namespace TM.Framework.User.Profile.Subscription
 
         #endregion
 
-      public async Task RefreshAsync()
+     public async Task RefreshAsync()
 {
     IsLoading = true;
 
     try
     {
-        // ==================== 本地模式最高权限处理（稳定版） ====================
         bool isLocalMode = System.IO.File.Exists("local.mode");
 
         if (isLocalMode)
         {
-            // 本地模式强制专业版 + 永久有效
             PlanType = "pro";
             IsActive = true;
             EndTime = DateTime.MaxValue;
             RemainingDays = 99999;
+            InviteCode = "007";                    // ← 这里设置 ID
 
-            TM.App.Log("[本地模式] 已强制设置为专业版永久会员");
+            TM.App.Log("[本地模式] 已强制设置为专业版永久会员，InviteCode=007");
         }
         else
         {
@@ -174,7 +173,6 @@ namespace TM.Framework.User.Profile.Subscription
                 RemainingDays = _subscriptionService.RemainingDays;
             }
         }
-        // =====================================================================
 
         var history = await _subscriptionService.GetActivationHistoryAsync();
         ActivationHistory.Clear();
